@@ -36,7 +36,6 @@ class Ch constructor(val ch: Char) : Expr {
     }
 }
 
-
 fun match(pattern: Expr, subject: String) {
     val res = pattern.match(subject, 0, {
         subject, pos ->
@@ -45,16 +44,12 @@ fun match(pattern: Expr, subject: String) {
     println(subject + ":" + res)
 }
 
-
 fun main(args: Array<String>) {
     // mn*p?a|mi
     val pattern = Alternative(
-            Concat(
-                    Ch('m'),
-                    Concat(
-                            Repeat(Ch('n')),
-                            Concat(Optional(Ch('p')),
-                                    Ch('a')))),
+            Concat(Ch('m'),
+                    Concat(Repeat(Ch('n')),
+                            Concat(Optional(Ch('p')), Ch('a')))),
             Concat(Ch('m'), Ch('i'))
     )
 
