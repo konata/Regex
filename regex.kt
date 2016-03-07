@@ -47,9 +47,9 @@ class Optional constructor(val pattern: Expr) : Expr {
 
 
 /**
- * implements *|+|?|{a,b}|{a,}|{,b}
+ * implements *|+|?|{a,b}|{a,}|{,b}  greedy not greedy
  */
-class Quantity constructor(val pattern: Expr, var min: Int, var max: Int) : Expr {
+class Quantity constructor(val pattern: Expr, var min: Int = 0, var max: Int = Integer.MAX_VALUE, val geedy: Boolean = true) : Expr {
     override fun match(target: String, i: Int, cont: (String, Int) -> Boolean): Boolean {
         return when (true) {
             min > 0 ->
@@ -65,13 +65,22 @@ class Quantity constructor(val pattern: Expr, var min: Int, var max: Int) : Expr
                 pattern.match(target, i, { rest, pos ->
                     consume()
                     match(rest, pos, cont)
-                }) || cont(target, i)
+                }) || (fallback() && cont(target, i))
         }
     }
 
+
+    // FIXME
+    // should not retain max & min in matcher, it will fails the rollback
     fun consume() {
-        if (max != Int.MAX_VALUE) max--;
-        min-- ;
+        if (max != Int.MAX_VALUE) max--
+        min--
+    }
+
+    fun fallback() : Boolean {
+        if(max != Int.MAX_VALUE) max++
+        min++
+        return true
     }
 }
 
@@ -135,6 +144,7 @@ fun match(pattern: Expr, subject: String) {
 
 fun main(args: Array<String>) {
     // mn*p?a|mi
+    /*
     val pattern = Alternative(
             Concat(
                     Ch('m'),
@@ -150,6 +160,7 @@ fun main(args: Array<String>) {
     match(pattern, "ma")
     match(pattern, "m")
     match(pattern, "konata");
+    */
 
     // (mn{2,3}a*b?\w\d+|\d?)e
     // (
@@ -193,6 +204,40 @@ fun main(args: Array<String>) {
     match(pattern3, "mmmm")
     match(pattern3, "mnmnmn")
     match(pattern3, "fdsafdsa")
+
+
+
+    // \w{2,5}\d{,7}|\s{5}\d{3,}
+
+    val pattern4 = Alternative(
+    Concat(
+    Quantity(Word(), 2, 5),
+    Quantity(Digital(), 0, 7)
+    ),
+
+    Concat(
+            Quantity(Blank(), 5, 5),
+            Quantity(Digital(), 3, Int.MAX_VALUE)
+    ))
+
+    println("====================")
+    match(pattern4,"ab123") // true
+    match(pattern4,"  1234") // false
+    match(pattern4,"  123") // false
+    match(pattern4,"     1245") // true
+    match(pattern4,"   ") // false
+    match(pattern4,"fdafdd1") // false
+    match(pattern4,"ffff") // true
+
+    val quantityPattern = Quantity(Digital(),2,5)
+    match(quantityPattern,"")
+    match(quantityPattern,"12")
+    match(quantityPattern,"1234")
+    match(quantityPattern,"123443434")
+
+
+
+
 }
 
 
